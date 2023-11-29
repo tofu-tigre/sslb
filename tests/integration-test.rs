@@ -38,7 +38,8 @@ async fn load_balancer_works() {
   }
 
   let server_addr = "localhost:8000";
-  let policy = Box::new(SimpleRoundRobinPolicy::new(endpoints));
+  let policy =
+    Box::new(SimpleRoundRobinPolicy::new(endpoints.into_iter().collect()));
   create_lb_with_policy(server_addr, policy).await;
 
   let mut stream = TcpStream::connect(server_addr).await.unwrap();

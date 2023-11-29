@@ -16,7 +16,7 @@ async fn main() {
     };
 
     let policy =
-        Box::new(SimpleRoundRobinPolicy::new(toml.config.endpoints));
+        Box::new(SimpleRoundRobinPolicy::new(toml.config.endpoints.into_iter().collect()));
 
     let mut server = match LoadBalancer::build(
         &toml.config.ip,

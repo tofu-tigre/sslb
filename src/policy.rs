@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Index, hash::Hash};
+use std::{collections::{HashMap, HashSet}, ops::Index, hash::Hash};
 use rand::{thread_rng, Rng};
 
 pub trait Policy {
@@ -11,12 +11,13 @@ struct VectorSet<T> {
   set_elems: HashMap<T, usize>,
 }
 
+// Note: Elems must not contain duplicates
 impl<T> VectorSet<T>
 where T: Clone + PartialEq + Eq + Hash + FromIterator<T> {
-  pub fn new(elems: Vec<T>) -> Self {
+  pub fn new(elems: HashSet<T>) -> Self {
     let mut i = 0;
     VectorSet {
-      vec_elems: elems.clone(),
+      vec_elems: elems.clone().into_iter().collect(),
       set_elems: elems.into_iter().map(|el| {
         let pair = (el, i);
         i += 1;
@@ -67,7 +68,7 @@ pub struct SimpleRoundRobinPolicy {
 unsafe impl Send for SimpleRoundRobinPolicy {}
 
 impl SimpleRoundRobinPolicy {
-  pub fn new(choices: Vec<String>) -> Self {
+  pub fn new(choices: HashSet<String>) -> Self {
     assert!(choices.len() > 0);
     SimpleRoundRobinPolicy { curr: 0, choices: VectorSet::new(choices) }
   }
@@ -93,7 +94,7 @@ pub struct RandomPolicy {
 unsafe impl Send for RandomPolicy {}
 
 impl RandomPolicy {
-  pub fn new(choices: Vec<String>) -> Self {
+  pub fn new(choices: HashSet<String>) -> Self {
     assert!(choices.len() > 0);
     RandomPolicy { choices: VectorSet::new(choices) }
   }

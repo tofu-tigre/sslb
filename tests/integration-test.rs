@@ -19,8 +19,8 @@ async fn create_dummy_endpoint(addr: &str) {
   });
 }
 
-async fn create_lb_with_policy(addr: &str, endpoints: Vec<String>, policy: Box<dyn Policy<String> + Send>) {
-  let mut server = LoadBalancer::build(addr, endpoints, policy).await.unwrap();
+async fn create_lb_with_policy(addr: &str, policy: Box<dyn Policy + Send>) {
+  let mut server = LoadBalancer::build(addr, policy).await.unwrap();
   tokio::spawn(async move {
     server.run().await;
   });
@@ -38,8 +38,8 @@ async fn load_balancer_works() {
   }
 
   let server_addr = "localhost:8000";
-  let policy = Box::new(SimpleRoundRobinPolicy::new());
-  create_lb_with_policy(server_addr, endpoints, policy).await;
+  let policy = Box::new(SimpleRoundRobinPolicy::new(endpoints));
+  create_lb_with_policy(server_addr, policy).await;
 
   let mut stream = TcpStream::connect(server_addr).await.unwrap();
   stream.write_all(HTTP_GET_REQUEST.as_bytes()).await.unwrap();

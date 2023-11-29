@@ -6,9 +6,8 @@ use crate::policy::Policy;
 const MAX_REQUEST_SIZE: usize = 1024 * 1000;
 
 pub struct LoadBalancer {
-  endpoints: Vec<String>,
   listener: TcpListener,
-  policy: Box<dyn Policy<String>>,
+  policy: Box<dyn Policy>,
 }
 
 unsafe impl Send for LoadBalancer {}
@@ -16,12 +15,10 @@ unsafe impl Send for LoadBalancer {}
 impl LoadBalancer {
   pub async fn build(
     ip: &str,
-    endpoints: Vec<String>,
-    policy: Box<dyn Policy<String> + Send>)
+    policy: Box<dyn Policy + Send>)
     -> Result<LoadBalancer, io::Error> {
-    assert!(endpoints.len() > 0);
     let listener = TcpListener::bind(ip).await?;
-    Ok(LoadBalancer { endpoints, listener, policy })
+    Ok(LoadBalancer { listener, policy })
   }
 
   pub async fn run(&mut self) -> () {
@@ -33,16 +30,16 @@ impl LoadBalancer {
         continue;
       }
 
+      let (stream, socket) = connection.unwrap();
+      println!("Accepted user connection {}.", socket);
+
       // Choose which endpoint to forward to.
-      let endpoint = self.policy.select(&self.endpoints);
+      let endpoint = self.policy.select(&socket.to_string());
       println!("Selected endpoint {}", endpoint);
 
       // Hand off forwarding to seperate task.
       tokio::spawn(async move {
-        let (stream, socket) = connection.unwrap();
-        println!("Accepted user connection {}.", socket);
-
-        match handle_connection(endpoint, stream, socket).await {
+        match handle_connection(&endpoint, stream, socket).await {
           Ok(_) => (),
           Err(err) => eprintln!("ERROR: {}", err),
         }
@@ -52,7 +49,7 @@ impl LoadBalancer {
 }
 
 async fn handle_connection(
-  endpoint: String,
+  endpoint: &str,
   mut user_connection: TcpStream,
   _user_addr: SocketAddr)
   -> Result<(), Box<dyn Error>> {

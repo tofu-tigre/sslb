@@ -1,19 +1,20 @@
 use std::{collections::{HashMap, HashSet}, ops::Index, hash::Hash};
+use core::fmt::Debug;
 use rand::{thread_rng, Rng};
 
 pub trait Policy {
-  fn select(&mut self, client_addr: &str) -> String;
+  fn select(&mut self, client_addr: &str) -> Option<String>;
   fn remove(&mut self, el: &str) -> ();
 }
 
+#[derive(Debug)]
 struct VectorSet<T> {
   vec_elems: Vec<T>,
   set_elems: HashMap<T, usize>,
 }
 
-// Note: Elems must not contain duplicates
 impl<T> VectorSet<T>
-where T: Clone + PartialEq + Eq + Hash + FromIterator<T> {
+where T: Clone + PartialEq + Eq + Hash + Debug + FromIterator<T> {
   pub fn new(elems: HashSet<T>) -> Self {
     let mut i = 0;
     VectorSet {
@@ -32,7 +33,6 @@ where T: Clone + PartialEq + Eq + Hash + FromIterator<T> {
   }
 
   pub fn len(&self) -> usize {
-    assert_eq!(self.vec_elems.len(), self.set_elems.len());
     return self.vec_elems.len()
   }
 
@@ -44,8 +44,8 @@ where T: Clone + PartialEq + Eq + Hash + FromIterator<T> {
     };
     self.vec_elems.swap_remove(index_in_vec);
 
-    // Edge case: `el` was the last element.
-    if self.vec_elems.is_empty() {
+    // Edge case: `el` was the last element or one element left.
+    if self.vec_elems.len() <= 1 {
       return
     }
     let swapped_el = &self.vec_elems[index_in_vec];
@@ -75,11 +75,13 @@ impl SimpleRoundRobinPolicy {
 }
 
 impl Policy for SimpleRoundRobinPolicy {
-  fn select(&mut self, _client_addr: &str) -> String {
-    assert!(!self.choices.is_empty());
+  fn select(&mut self, _client_addr: &str) -> Option<String> {
+    if self.choices.is_empty() {
+      return None
+    }
     let choice = self.choices[self.curr % self.choices.len()].clone();
     self.curr += 1;
-    choice
+    Some(choice)
   }
 
   fn remove(&mut self, el: &str) {
@@ -101,10 +103,12 @@ impl RandomPolicy {
 }
 
 impl Policy for RandomPolicy {
-  fn select(&mut self, _client_addr: &str) -> String {
-    assert!(!self.choices.is_empty());
+  fn select(&mut self, _client_addr: &str) -> Option<String> {
+    if self.choices.is_empty() {
+      return None
+    }
     let i = thread_rng().gen_range(0..self.choices.len());
-    self.choices[i].clone()
+    Some(self.choices[i].clone())
   }
 
   fn remove(&mut self, el: &str) {

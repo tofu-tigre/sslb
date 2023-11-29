@@ -23,38 +23,6 @@ impl LoadBalancer {
   }
 
   pub async fn run(&mut self) -> () {
-    tokio::spawn(async move {
-        let listener = TcpListener::bind("localhost:8001").await.unwrap();
-        loop {
-            let (mut stream, _) = listener.accept().await.unwrap();
-            let mut buf = vec![0u8; 1024];
-            stream.read(&mut buf).await.unwrap();
-            println!("Dummy endpoint :8001 read: \n{}", std::str::from_utf8(&buf).unwrap());
-            let _ = stream.write_all(b"HTTP/1.1 200 OK Content-Type: text/html Content-Length: 27\n\nThis is the response content.\r\n").await;
-        }
-    });
-    tokio::spawn(async move {
-      let listener = TcpListener::bind("localhost:8002").await.unwrap();
-      loop {
-          let (mut stream, _) = listener.accept().await.unwrap();
-          let mut buf = vec![0u8; 1024];
-          stream.read(&mut buf).await.unwrap();
-          println!("Dummy endpoint :8001 read: \n{}", std::str::from_utf8(&buf).unwrap());
-          let _ = stream.write_all(b"HTTP/1.1 200 OK Content-Type: text/html Content-Length: 27\n\nThis is the response content.\r\n").await;
-      }
-  });
-  tokio::spawn(async move {
-    let listener = TcpListener::bind("localhost:8003").await.unwrap();
-    loop {
-        let (mut stream, _) = listener.accept().await.unwrap();
-        let mut buf = vec![0u8; 1024];
-        stream.read(&mut buf).await.unwrap();
-        println!("Dummy endpoint :8001 read: \n{}", std::str::from_utf8(&buf).unwrap());
-        let _ = stream.write_all(b"HTTP/1.1 200 OK Content-Type: text/html Content-Length: 27\n\nThis is the response content.\r\n").await;
-    }
-});
-
-
     loop {
       // Wait for incoming connections.
       let connection = self.listener.accept().await;

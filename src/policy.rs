@@ -8,6 +8,8 @@ pub struct SimpleRoundRobinPolicy {
   curr: usize,
 }
 
+unsafe impl Send for SimpleRoundRobinPolicy {}
+
 impl SimpleRoundRobinPolicy {
   pub fn new() -> Self {
     SimpleRoundRobinPolicy { curr: 0 }

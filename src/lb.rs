@@ -11,11 +11,13 @@ pub struct LoadBalancer {
   policy: Box<dyn Policy<String>>,
 }
 
+unsafe impl Send for LoadBalancer {}
+
 impl LoadBalancer {
   pub async fn build(
     ip: &str,
     endpoints: Vec<String>,
-    policy: Box<dyn Policy<String>>)
+    policy: Box<dyn Policy<String> + Send>)
     -> Result<LoadBalancer, io::Error> {
     assert!(endpoints.len() > 0);
     let listener = TcpListener::bind(ip).await?;

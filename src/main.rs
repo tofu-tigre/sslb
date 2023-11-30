@@ -1,6 +1,6 @@
 use std::process::exit;
-use sslb::lb::LoadBalancer;
-use sslb::policy::SimpleRoundRobinPolicy;
+use sslb::{lb::LoadBalancer, policy::PolicyType};
+use sslb::policy::create_policy;
 use sslb::config::LbConfig;
 use log::{info, error};
 
@@ -8,7 +8,8 @@ const CONFIG_FILENAME: &'static str = "sslb.toml";
 
 #[tokio::main]
 async fn main() {
-    env_logger::init();
+    env_logger::builder().filter_level(log::LevelFilter::Info).init();
+
     let toml = match LbConfig::build(CONFIG_FILENAME) {
         Ok(c) => c,
         Err(err) => {
@@ -17,8 +18,15 @@ async fn main() {
         }
     };
 
-    let policy =
-        Box::new(SimpleRoundRobinPolicy::new(toml.config.endpoints.into_iter().collect()));
+    let policy_type = match PolicyType::try_from(toml.config.policy.clone()) {
+        Ok(p) => p,
+        Err(err) => {
+            error!("{}", err);
+            exit(1);
+        }
+    };
+    info!("Using policy \"{}\".", toml.config.policy);
+    let policy = create_policy(policy_type, toml.config.endpoints);
 
     info!("Building load balancer...");
     let mut server = match LoadBalancer::build(

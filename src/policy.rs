@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, HashSet}, ops::Index, hash::Hash};
+use std::{collections::{HashMap, HashSet, hash_map::DefaultHasher}, ops::Index, hash::{Hash, Hasher}};
 use core::fmt::Debug;
 use rand::{thread_rng, Rng};
 
@@ -69,6 +69,40 @@ impl<T> Index<usize> for VectorSet<T> {
   }
 }
 
+pub enum PolicyType {
+  SimpleRoundRobin,
+  Random,
+  HashedIp,
+}
+
+impl TryFrom<String> for PolicyType {
+  type Error = String;
+
+  fn try_from(value: String) -> Result<Self, Self::Error> {
+      match value.as_str() {
+        "round-robin" => Ok(PolicyType::SimpleRoundRobin),
+        "random" => Ok(PolicyType::Random),
+        "hashed-ip" => Ok(PolicyType::HashedIp),
+        _ => Err(format!("Unknown policy type \"{value}\""))
+      }
+  }
+}
+
+
+pub fn create_policy(kind: PolicyType, endpoints: Vec<String>) -> Box<dyn Policy> {
+  match kind {
+    PolicyType::SimpleRoundRobin => {
+      Box::new(SimpleRoundRobinPolicy::new(endpoints.into_iter().collect()))
+    },
+    PolicyType::Random => {
+      Box::new(RandomPolicy::new(endpoints.into_iter().collect()))
+    },
+    PolicyType::HashedIp => {
+      Box::new(HashedIpPolicy::new(endpoints.into_iter().collect()))
+    }
+  }
+}
+
 pub struct SimpleRoundRobinPolicy {
   curr: usize,
   choices: VectorSet<String>,
@@ -117,6 +151,35 @@ impl Policy for RandomPolicy {
       return None
     }
     let i = thread_rng().gen_range(0..self.choices.len());
+    Some(self.choices[i].clone())
+  }
+
+  fn remove(&mut self, el: &str) {
+    self.choices.remove(&el.to_owned());
+  }
+}
+
+pub struct HashedIpPolicy {
+  choices: VectorSet<String>,
+}
+
+unsafe impl Send for HashedIpPolicy {}
+
+impl HashedIpPolicy {
+  pub fn new(choices: HashSet<String>) -> Self {
+    assert!(choices.len() > 0);
+    HashedIpPolicy { choices: VectorSet::new(choices) }
+  }
+}
+
+impl Policy for HashedIpPolicy {
+  fn select(&mut self, client_addr: &str) -> Option<String> {
+    if self.choices.is_empty() {
+      return None
+    }
+    let mut hasher = DefaultHasher::new();
+    client_addr.hash(&mut hasher);
+    let i = hasher.finish() as usize % self.choices.len();
     Some(self.choices[i].clone())
   }
 

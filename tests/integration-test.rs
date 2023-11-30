@@ -1,4 +1,5 @@
 use log::info;
+use serial_test::serial;
 use sslb::lb::LoadBalancer;
 use sslb::policy::{SimpleRoundRobinPolicy, Policy};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -34,6 +35,7 @@ async fn create_lb_with_policy(addr: &str, policy: Box<dyn Policy>) {
 }
 
 #[tokio::test]
+#[serial]
 async fn load_balancer_works() {
   let endpoints = vec![
     "localhost:8001".to_string(),
@@ -57,6 +59,7 @@ async fn load_balancer_works() {
 }
 
 #[tokio::test]
+#[serial]
 async fn load_balancer_fails_when_all_endpoints_disconnect() {
   let endpoints = vec![
     "localhost:8001".to_string(),

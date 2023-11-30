@@ -10,6 +10,7 @@ pub struct LbConfig {
 #[derive(Deserialize)]
 pub struct Config {
   pub addr: String,
+  pub policy: String,
   pub endpoints: Vec<String>,
 }
 

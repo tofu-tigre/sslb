@@ -14,7 +14,7 @@ struct VectorSet<T> {
 }
 
 impl<T> VectorSet<T>
-where T: Clone + PartialEq + Eq + Hash + Debug + FromIterator<T> {
+where T: Clone + PartialEq + Eq + Hash + Debug {
   pub fn new(elems: HashSet<T>) -> Self {
     let mut i = 0;
     VectorSet {
@@ -33,7 +33,11 @@ where T: Clone + PartialEq + Eq + Hash + Debug + FromIterator<T> {
   }
 
   pub fn len(&self) -> usize {
-    return self.vec_elems.len()
+    self.vec_elems.len()
+  }
+
+  pub fn contains(&self, key: &T) -> bool {
+    self.set_elems.contains_key(key)
   }
 
   pub fn remove(&mut self, el: &T) {
@@ -44,8 +48,13 @@ where T: Clone + PartialEq + Eq + Hash + Debug + FromIterator<T> {
     };
     self.vec_elems.swap_remove(index_in_vec);
 
+    // Edge case: We swapped the last element with itself.
+    if index_in_vec == self.vec_elems.len() {
+      return
+    }
+
     // Edge case: `el` was the last element or one element left.
-    if self.vec_elems.len() <= 1 {
+    if self.vec_elems.len() <= 0 {
       return
     }
     let swapped_el = &self.vec_elems[index_in_vec];
@@ -114,4 +123,50 @@ impl Policy for RandomPolicy {
   fn remove(&mut self, el: &str) {
     self.choices.remove(&el.to_owned());
   }
+}
+
+// Tests
+
+#[test]
+fn values_persist() {
+  let vals = vec![1, 2, 3, 4];
+  let vecset = VectorSet::new(vals.into_iter().collect());
+  assert!(vecset.contains(&1));
+  assert!(vecset.contains(&2));
+  assert!(vecset.contains(&3));
+  assert!(vecset.contains(&4));
+}
+
+#[test]
+fn remove_elements() {
+  let vals = vec![1, 2, 3, 4];
+  let mut vecset = VectorSet::new(vals.into_iter().collect());
+  assert!(vecset.contains(&1));
+  assert!(vecset.contains(&2));
+  assert!(vecset.contains(&3));
+  assert!(vecset.contains(&4));
+
+  vecset.remove(&1);
+  assert!(!vecset.contains(&1));
+  assert!(vecset.contains(&2));
+  assert!(vecset.contains(&3));
+  assert!(vecset.contains(&4));
+
+  vecset.remove(&2);
+  assert!(!vecset.contains(&1));
+  assert!(!vecset.contains(&2));
+  assert!(vecset.contains(&3));
+  assert!(vecset.contains(&4));
+
+  vecset.remove(&3);
+  assert!(!vecset.contains(&1));
+  assert!(!vecset.contains(&2));
+  assert!(!vecset.contains(&3));
+  assert!(vecset.contains(&4));
+
+  vecset.remove(&4);
+  assert!(!vecset.contains(&1));
+  assert!(!vecset.contains(&2));
+  assert!(!vecset.contains(&3));
+  assert!(!vecset.contains(&4));
 }

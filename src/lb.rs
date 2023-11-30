@@ -20,10 +20,10 @@ unsafe impl Send for LoadBalancer {}
 
 impl LoadBalancer {
   pub async fn build(
-    ip: &str,
-    policy: Box<dyn Policy + Send>)
+    addr: &str,
+    policy: Box<dyn Policy>)
     -> Result<LoadBalancer, io::Error> {
-    let listener = TcpListener::bind(ip).await?;
+    let listener = TcpListener::bind(addr).await?;
     Ok(LoadBalancer { listener, policy })
   }
 

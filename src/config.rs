@@ -9,7 +9,7 @@ pub struct LbConfig {
 
 #[derive(Deserialize)]
 pub struct Config {
-  pub ip: String,
+  pub addr: String,
   pub endpoints: Vec<String>,
 }
 

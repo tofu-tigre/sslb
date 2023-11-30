@@ -1,3 +1,4 @@
+use log::info;
 use sslb::lb::LoadBalancer;
 use sslb::policy::{SimpleRoundRobinPolicy, Policy};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -7,7 +8,7 @@ const HTTP_OK_RESPONSE: &'static str = "HTTP/1.1 200 OK\r\n";
 const HTTP_GET_REQUEST: &'static str = "GET / HTTP/1.1\r\n";
 
 async fn create_dummy_endpoint(addr: &str) {
-  println!("Create dummy endpoint with addr: {}", addr);
+  info!("Create dummy endpoint with addr: {}", addr);
   let listener = TcpListener::bind(addr).await.unwrap();
   tokio::spawn(async move {
     loop {
@@ -19,10 +20,10 @@ async fn create_dummy_endpoint(addr: &str) {
   });
 }
 
-async fn create_lb_with_policy(addr: &str, policy: Box<dyn Policy + Send>) {
+async fn create_lb_with_policy(addr: &str, policy: Box<dyn Policy>) {
   let mut server = LoadBalancer::build(addr, policy).await.unwrap();
   tokio::spawn(async move {
-    server.run().await;
+    server.run().await.unwrap();
   });
 }
 
@@ -34,6 +35,9 @@ async fn load_balancer_works() {
     "localhost:8003".to_string(),
     "localhost:8004".to_string()];
   for endpoint in &endpoints {
+    if endpoint == "localhost:8001" || endpoint == "localhost:8002" {
+      continue;
+    }
     create_dummy_endpoint(endpoint).await;
   }
 

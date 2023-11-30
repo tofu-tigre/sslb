@@ -22,7 +22,7 @@ async fn main() {
 
     info!("Building load balancer...");
     let mut server = match LoadBalancer::build(
-        &toml.config.ip,
+        &toml.config.addr,
         policy).await {
         Ok(s) => s,
         Err(err) => {

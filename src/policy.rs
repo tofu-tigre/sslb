@@ -2,7 +2,7 @@ use std::{collections::{HashMap, HashSet}, ops::Index, hash::Hash};
 use core::fmt::Debug;
 use rand::{thread_rng, Rng};
 
-pub trait Policy {
+pub trait Policy: Send {
   fn select(&mut self, client_addr: &str) -> Option<String>;
   fn remove(&mut self, el: &str) -> ();
 }
